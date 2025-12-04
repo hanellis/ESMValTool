@@ -58,7 +58,7 @@ for your conda environments instead of
 much faster, see `move-to-mamba`_ for more information.
 
 For a minimal mamba installation (recommended) go to
-https://mamba.readthedocs.io/en/latest/installation.html.
+https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html.
 
 .. note::
     It is recommended that you always use the latest version of mamba, as
@@ -372,14 +372,14 @@ code (called ``ESMValTool`` if you did not choose a different name):
 
 .. code-block:: bash
 
-    pip install --editable '.[develop]'
+    pip install --no-deps --editable '.[develop]'
 
 Using the ``--editable`` flag will cause the installer to create a symbolic link
 from the installation location to your source code, so any changes you make to
 the source code will immediately be available in the installed version of the
 tool.
 
-If you are planning to do any coding, install the :ref:`esmvaltool:pre-commit`
+If you are planning to do any coding, install the :ref:`pre-commit`
 hooks by running:
 
 .. code-block:: bash
@@ -471,7 +471,7 @@ and then install ESMValCore in development mode
 
 .. code-block:: bash
 
-    pip install --editable '.[develop]'
+    pip install --no-deps --editable '.[develop]'
 
 To check that the installation was successful, run
 
@@ -484,9 +484,9 @@ this should show the directory of the source code that you just downloaded.
 If the command above shows a directory inside your conda environment instead,
 e.g. ``~/miniforge3/envs/esmvaltool/lib/python3.11/site-packages/esmvalcore``,
 you may need to manually remove that directory and run
-``pip install --editable '.[develop]'`` again.
+``pip install --no-deps --editable '.[develop]'`` again.
 
-Finally, also install the :ref:`esmvaltool:pre-commit` hooks by running:
+Finally, also install the :ref:`pre-commit` hooks by running:
 
 .. code-block:: bash
 
@@ -688,7 +688,7 @@ trust the usual PyPI URLs you can declare them with the option
 
 .. code-block:: bash
 
-    pip install --trusted-host=pypi.python.org --trusted-host=pypi.org --trusted-host=files.pythonhosted.org -e .[develop]
+    pip install --trusted-host=pypi.python.org --trusted-host=pypi.org --trusted-host=files.pythonhosted.org --no-deps -e .[develop]
 
 If R packages fail to download, you might be able to solve this by
 setting the environment variable ``http_proxy`` to the correct value, e.g.
