@@ -7,7 +7,7 @@ on:
   repository_dispatch:
   workflow_dispatch:
   schedule:
-    - cron: "00 06 * * 0"
+    - cron: "00 00 1 * *" # monthly
 
 jobs:
   linkChecker:
@@ -15,7 +15,7 @@ jobs:
     permissions:
       issues: write # Required for peter-evans/create-issue-from-file
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Link Checker
         id: lychee
@@ -28,14 +28,14 @@ jobs:
           args: >
             ./doc/sphinx/**/*.rst
             --max-concurrency 1 --no-progress
-            --accept "200..=204, 429"
+            --accept "200..=204, 302, 429"
 
       - name: Set current date
         run: echo "REPORT_DATE=$(date +'%Y-%m-%d')" >> $GITHUB_ENV
 
       - name: Create Issue From File
         if: steps.lychee.outputs.exit_code != 0
-        uses: peter-evans/create-issue-from-file@v5
+        uses: peter-evans/create-issue-from-file@v6
         with:
           title: "🔗 Link Checker Report - ${{ env.REPORT_DATE }}"
           content-filepath: ./lychee/out.md

@@ -113,3 +113,7 @@ esmvaltool/utils/testing/regression/.service/
 
 # Temporary imagehash files
 imagehashes_*.yml
+
+
+#Ignore vscode AI rules
+.github/instructions/codacy.instructions.md
