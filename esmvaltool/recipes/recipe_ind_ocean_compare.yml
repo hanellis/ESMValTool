@@ -1,0 +1,297 @@
+# ESMValTool
+# recipe_modes_of_variability.yml
+---
+documentation:
+  title: |
+    Metrics for the Indian Ocean. 
+
+  description: |
+    Recipe for calculating the Dipole Mode Index. 
+
+  authors:
+    - righi_mattia
+
+datasets:
+   - {dataset: HadGEM3-GC31-MM, project: CMIP6, exp: historical, ensemble: r1i1p1f3, start_year: 1950, end_year: 2010, grid: gn}
+   - {dataset: HadGEM3-GC31-LL, project: CMIP6, exp: historical, ensemble: r1i1p1f3, start_year: 1950, end_year: 2010, grid: gn}
+#   - {dataset: MPI-ESM1-2-LR, project: CMIP6, mip: Omon, exp: historical, ensemble: r1i1p1f1, start_year: 1990, end_year: 2010, grid: gn}
+   #   - {dataset: MPI-ESM1-2-LR, project: CMIP6, mip: Amon, exp: historical, ensemble: r1i1p1f1, start_year: 1990, end_year: 2010, grid: gn}
+   
+   #- {dataset: CNRM-CM5, project: CMIP5, start_year: 1990, end_year: 2010, ensemble: r1i1p1, exp: historical}
+#  - {dataset: CNRM-CM5, project: CMIP5, start_year: 2020, end_year: 2075, ensemble: r1i1p1, exp: rcp85}
+
+preprocessors:
+
+  global_anomalies:
+    anomalies:
+      period: month
+      reference:
+        start_year: 1990
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    regrid:
+      target_grid: 1x1
+      scheme: linear
+
+  global_anomalies_pr:
+    detrend:
+      method: linear
+    regrid:
+      target_grid: 1x1
+      scheme: linear
+    anomalies:
+      period: month
+      reference:
+        start_year: 1990
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    convert_units:
+      units: mm day-1  
+    custom_order: true
+       
+
+  west_pole_anomalies:
+    extract_region:
+      start_longitude: 50
+      end_longitude: 70
+      start_latitude: -10
+      end_latitude: 10
+    anomalies:
+      period: month
+      reference:
+        start_year: 1990
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    area_statistics:
+      operator: mean
+    regrid_time:
+      calendar: gregorian
+      units: days since 1900-01-01
+
+  east_pole_anomalies:
+    extract_region:
+      start_longitude: 90
+      end_longitude: 110
+      start_latitude: -10
+      end_latitude: 0
+    anomalies:
+      period: month
+      reference:
+        start_year: 1990
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    area_statistics:
+      operator: mean
+    regrid_time:
+      calendar: gregorian
+      units: days since 1900-01-01
+
+  west_pole_abs:
+    extract_region:
+      start_longitude: 50
+      end_longitude: 70
+      start_latitude: -10
+      end_latitude: 10
+    area_statistics:
+      operator: mean
+    regrid_time:
+      calendar: gregorian
+      units: days since 1900-01-01
+    convert_units:
+      units: celsius    
+
+  east_pole_abs:
+    extract_region:
+      start_longitude: 90
+      end_longitude: 110
+      start_latitude: -10
+      end_latitude: 0
+    area_statistics:
+      operator: mean
+    regrid_time:
+      calendar: gregorian
+      units: days since 1900-01-01
+    convert_units:
+      units: celsius   
+
+  nino_3.4_anomalies:
+    extract_region:
+      start_longitude: -170
+      end_longitude: -120
+      start_latitude: -5
+      end_latitude: 5
+    anomalies:
+      period: month
+      reference:
+        start_year: 1990
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    area_statistics:
+      operator: mean
+    regrid_time:
+      calendar: gregorian
+      units: days since 1900-01-01
+
+  extract_eq_region:
+    extract_region:
+      start_longitude: 0
+      end_longitude: 360
+      start_latitude: -2
+      end_latitude: 2    
+    extract_volume:
+      z_min: 0.
+      z_max: 200.
+      interval_bounds: 'closed'
+    convert_units:
+      units: celsius
+    climate_statistics:
+      operator: mean
+      period: season
+
+  east_pole_abs_surface:
+    extract_region:
+      start_longitude: 90
+      end_longitude: 110
+      start_latitude: -10
+      end_latitude: 0
+    extract_levels:
+      levels: [100000.]
+      scheme: linear
+    area_statistics:
+      operator: mean
+    regrid_time:
+      calendar: gregorian
+      units: days since 1900-01-01
+
+  extract_sctr_region:
+    extract_region:
+      start_longitude: 50
+      end_longitude: 70
+      start_latitude: -10
+      end_latitude: -5
+    extract_volume:
+      z_min: 0.
+      z_max: 200.
+      interval_bounds: 'closed'
+    convert_units:
+      units: celsius
+    climate_statistics:
+      operator: mean
+      period: monthly
+
+diagnostics:
+
+  iod_metrics:
+    variables:
+      sst_anomalies_global:
+        short_name: tos
+        preprocessor: global_anomalies
+        mip: Omon
+        additional_datasets:
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      sst_anomalies_west:
+        short_name: tos
+        preprocessor: west_pole_anomalies
+        mip: Omon
+        additional_datasets:
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      sst_anomalies_east:
+        short_name: tos
+        preprocessor: east_pole_anomalies
+        mip: Omon
+        additional_datasets:
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      sst_abs_west:
+        short_name: tos
+        preprocessor: west_pole_abs
+        mip: Omon
+        additional_datasets:
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      sst_abs_east:
+        short_name: tos
+        preprocessor: east_pole_abs
+        mip: Omon
+        additional_datasets:
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      sst_anomalies_nino:
+        short_name: tos
+        preprocessor: nino_3.4_anomalies
+        mip: Omon
+        additional_datasets:
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      precip_anomalies_global:
+        short_name: pr
+        preprocessor: global_anomalies_pr
+        mip: Amon
+        additional_datasets:
+        - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+
+    scripts: 
+      iod_script:
+        script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/iod_diag.py
+
+  eq_region_analysis:
+    variables:
+      eq_region:
+        short_name: thetao
+        preprocessor: extract_eq_region
+        mip: Omon
+
+    scripts: 
+      eq_scripts:
+        script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/eq_therm_seas_diag.py
+
+  monthly_scatter_metrics:
+    variables:
+      sst_east:
+        short_name: tos
+        preprocessor: east_pole_abs
+        mip: Omon
+        additional_datasets:
+          - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      u10_east:
+        short_name: ua
+        preprocessor: east_pole_abs_surface
+        mip: Amon
+        supplementary_variables:
+        - short_name: areacella
+          skip: true
+        additional_datasets:
+          - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+
+    scripts: 
+      scatter_script:
+        script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/scatter_diag.py
+        
+  sctr_analysis:
+    variables:
+      sctr_region:
+        short_name: thetao
+        preprocessor: extract_sctr_region
+        mip: Omon
+
+    scripts: 
+      sctr_scripts:
+        script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/sctr_diag.py
+
+  
