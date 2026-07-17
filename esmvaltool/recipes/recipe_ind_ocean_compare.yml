@@ -1,5 +1,5 @@
 # ESMValTool
-# recipe_modes_of_variability.yml
+# recipe_ind_ocean_compare.yml
 ---
 documentation:
   title: |
@@ -12,8 +12,8 @@ documentation:
     - righi_mattia
 
 datasets:
-   - {dataset: HadGEM3-GC31-MM, project: CMIP6, exp: historical, ensemble: r1i1p1f3, start_year: 1950, end_year: 2010, grid: gn}
-   - {dataset: HadGEM3-GC31-LL, project: CMIP6, exp: historical, ensemble: r1i1p1f3, start_year: 1950, end_year: 2010, grid: gn}
+   - {dataset: HadGEM3-GC31-MM, project: CMIP6, exp: historical, ensemble: r1i1p1f3, start_year: 1990, end_year: 2010, grid: gn}
+   - {dataset: HadGEM3-GC31-LL, project: CMIP6, exp: historical, ensemble: r1i1p1f3, start_year: 1990, end_year: 2010, grid: gn}
 #   - {dataset: MPI-ESM1-2-LR, project: CMIP6, mip: Omon, exp: historical, ensemble: r1i1p1f1, start_year: 1990, end_year: 2010, grid: gn}
    #   - {dataset: MPI-ESM1-2-LR, project: CMIP6, mip: Amon, exp: historical, ensemble: r1i1p1f1, start_year: 1990, end_year: 2010, grid: gn}
    
@@ -22,7 +22,7 @@ datasets:
 
 preprocessors:
 
-  global_anomalies:
+  global_anomalies_2d:
     anomalies:
       period: month
       reference:
@@ -33,9 +33,48 @@ preprocessors:
         end_month: 12
         end_day: 31
       standardize: false
+    seasonal_statistics:
+      operator: mean
     regrid:
       target_grid: 1x1
       scheme: linear
+  global_anomalies_surface:
+    anomalies:
+      period: month
+      reference:
+        start_year: 1990
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    seasonal_statistics:
+      operator: mean
+    extract_levels:
+      levels: [100000.]
+      scheme: linear
+    regrid:
+      target_grid: 1x1
+      scheme: linear
+  global_anomalies_2d_pr:
+    anomalies:
+      period: month
+      reference:
+        start_year: 1990
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    seasonal_statistics:
+      operator: mean
+    regrid:
+      target_grid: 1x1
+      scheme: linear
+    convert_units:
+      units: mm day-1  
 
   global_anomalies_pr:
     detrend:
@@ -76,6 +115,10 @@ preprocessors:
       standardize: false
     area_statistics:
       operator: mean
+    seasonal_statistics:
+      operator: mean
+    extract_season:
+      season: SON
     regrid_time:
       calendar: gregorian
       units: days since 1900-01-01
@@ -98,6 +141,10 @@ preprocessors:
       standardize: false
     area_statistics:
       operator: mean
+    seasonal_statistics:
+      operator: mean
+    extract_season:
+      season: SON
     regrid_time:
       calendar: gregorian
       units: days since 1900-01-01
@@ -137,7 +184,7 @@ preprocessors:
       start_latitude: -5
       end_latitude: 5
     anomalies:
-      period: month
+      period: season
       reference:
         start_year: 1990
         start_month: 1
@@ -148,6 +195,10 @@ preprocessors:
       standardize: false
     area_statistics:
       operator: mean
+    seasonal_statistics:
+      operator: mean
+    extract_season:
+      season: DJF
     regrid_time:
       calendar: gregorian
       units: days since 1900-01-01
@@ -205,10 +256,29 @@ diagnostics:
     variables:
       sst_anomalies_global:
         short_name: tos
-        preprocessor: global_anomalies
+        preprocessor: global_anomalies_2d
         mip: Omon
         additional_datasets:
         - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      precip_anomalies_global_seasonal:
+        short_name: pr
+        preprocessor: global_anomalies_2d_pr
+        mip: Amon
+        additional_datasets:
+        - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      zonal_wind_anomalies_global:
+        short_name: ua
+        preprocessor: global_anomalies_surface
+        mip: Amon
+        additional_datasets:
+        - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      meridional_wind_anomalies_global:
+        short_name: va
+        preprocessor: global_anomalies_surface
+        mip: Amon
+        additional_datasets:
+        - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+
       sst_anomalies_west:
         short_name: tos
         preprocessor: west_pole_anomalies
@@ -239,7 +309,7 @@ diagnostics:
         mip: Omon
         additional_datasets:
         - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
-      precip_anomalies_global:
+      precip_anomalies_global_monthly:
         short_name: pr
         preprocessor: global_anomalies_pr
         mip: Amon
@@ -250,48 +320,48 @@ diagnostics:
       iod_script:
         script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/iod_diag.py
 
-  eq_region_analysis:
-    variables:
-      eq_region:
-        short_name: thetao
-        preprocessor: extract_eq_region
-        mip: Omon
+  # eq_region_analysis:
+  #   variables:
+  #     eq_region:
+  #       short_name: thetao
+  #       preprocessor: extract_eq_region
+  #       mip: Omon
 
-    scripts: 
-      eq_scripts:
-        script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/eq_therm_seas_diag.py
+  #   scripts: 
+  #     eq_scripts:
+  #       script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/eq_therm_seas_diag.py
 
-  monthly_scatter_metrics:
-    variables:
-      sst_east:
-        short_name: tos
-        preprocessor: east_pole_abs
-        mip: Omon
-        additional_datasets:
-          - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
-      u10_east:
-        short_name: ua
-        preprocessor: east_pole_abs_surface
-        mip: Amon
-        supplementary_variables:
-        - short_name: areacella
-          skip: true
-        additional_datasets:
-          - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  # monthly_scatter_metrics:
+  #   variables:
+  #     sst_east:
+  #       short_name: tos
+  #       preprocessor: east_pole_abs
+  #       mip: Omon
+  #       additional_datasets:
+  #         - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #     u10_east:
+  #       short_name: ua
+  #       preprocessor: east_pole_abs_surface
+  #       mip: Amon
+  #       supplementary_variables:
+  #       - short_name: areacella
+  #         skip: true
+  #       additional_datasets:
+  #         - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
 
-    scripts: 
-      scatter_script:
-        script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/scatter_diag.py
+  #   scripts: 
+  #     scatter_script:
+  #       script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/scatter_diag.py
         
-  sctr_analysis:
-    variables:
-      sctr_region:
-        short_name: thetao
-        preprocessor: extract_sctr_region
-        mip: Omon
+  # sctr_analysis:
+  #   variables:
+  #     sctr_region:
+  #       short_name: thetao
+  #       preprocessor: extract_sctr_region
+  #       mip: Omon
 
-    scripts: 
-      sctr_scripts:
-        script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/sctr_diag.py
+  #   scripts: 
+  #     sctr_scripts:
+  #       script: /data/users/hannah.ellis/ESMValTool/esmvaltool/diag_scripts/indian_ocean/sctr_diag.py
 
   
