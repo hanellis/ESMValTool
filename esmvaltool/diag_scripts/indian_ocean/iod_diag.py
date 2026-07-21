@@ -439,6 +439,41 @@ def check_item_load(metadata, variable, dict_name):
             dict_name.update(item)
 
 
+def plot_dmi_histograms(cfg, dmi_dict, obs_keys, column_order, output_basename, prov_files):
+    """Create a 3-column histogram plot of DMI seasonal distribution with skewness."""
+    from scipy.stats import skew
+    
+    fig, axes = plt.subplots(1, 3, figsize=(14, 5))
+    
+    col_names = ['OBS', column_order[1], column_order[2]] if column_order[0] == 'OBS' else column_order[:3]
+    
+    for idx, col in enumerate(column_order):
+        ax = axes[idx]
+        dataset_key = obs_keys['dmi'] if col == 'OBS' else col
+        cube = dmi_dict[dataset_key]['cube']
+        
+        data = ma.filled(cube.data, np.nan)
+        data = data[np.isfinite(data)]
+        
+        skewness = skew(data)
+        
+        ax.hist(data, bins=15, color='steelblue', edgecolor='black', alpha=0.7)
+        ax.axvline(np.nanmean(data), color='red', linestyle='--', linewidth=2, label=f'Mean: {np.nanmean(data):.2f}')
+        ax.set_xlabel('DMI / K', fontsize=12)
+        ax.set_ylabel('Frequency', fontsize=12)
+        ax.set_title(f'{col_names[idx]}\nSkewness: {skewness:.3f}', fontsize=12, fontweight='bold')
+        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=10)
+    
+    fig.suptitle('DMI (SON) Distribution', fontsize=14, fontweight='bold', y=1.00)
+    fig.tight_layout()
+    
+    provenance_record = get_provenance_record(output_basename, list(prov_files))
+    save_figure(output_basename, provenance_record, cfg)
+    logger.info(f"DMI histogram plot saved: {output_basename}")
+    plt.close()
+
+
 def main(cfg):
     """Compute the Dipole Mode Index and plot results for all datasets."""
     input_data = cfg['input_data'].values()
@@ -470,6 +505,21 @@ def main(cfg):
     print("Zonal wind anomalies global:", zonal_wind_anoms)
     print("Meridional wind anomalies global:", meridional_wind_anoms)
     print("Precip anomalies seasonal:", precip_anoms)
+
+    # Determine dataset ordering for histograms and composites
+    obs_key_dmi = _find_obs_dataset_key(dmi_results)
+    common_models = _model_keys(dmi_results) & _model_keys(nino_data)
+    if len(common_models) < 2:
+        common_models = _model_keys(dmi_results)
+    selected_models = sorted(common_models)[:2]
+    column_order = ['OBS', selected_models[0], selected_models[1]]
+    obs_keys_hist = {'dmi': obs_key_dmi}
+    
+    prov_files = to_set(dmi_results[obs_key_dmi]['filename'])
+    for m in selected_models:
+        prov_files |= to_set(dmi_results[m]['filename'])
+
+    plot_dmi_histograms(cfg, dmi_results, obs_keys_hist, column_order, 'dmi_histograms_son', prov_files)
 
     composite_map(
         cfg,

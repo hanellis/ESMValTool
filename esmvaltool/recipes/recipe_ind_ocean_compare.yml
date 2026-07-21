@@ -12,37 +12,26 @@ documentation:
     - righi_mattia
 
 datasets:
-   - {dataset: HadGEM3-GC31-MM, project: CMIP6, exp: historical, ensemble: r1i1p1f3, start_year: 1990, end_year: 2010, grid: gn}
-   - {dataset: HadGEM3-GC31-LL, project: CMIP6, exp: historical, ensemble: r1i1p1f3, start_year: 1990, end_year: 2010, grid: gn}
-#   - {dataset: MPI-ESM1-2-LR, project: CMIP6, mip: Omon, exp: historical, ensemble: r1i1p1f1, start_year: 1990, end_year: 2010, grid: gn}
-   #   - {dataset: MPI-ESM1-2-LR, project: CMIP6, mip: Amon, exp: historical, ensemble: r1i1p1f1, start_year: 1990, end_year: 2010, grid: gn}
+   - {dataset: HadGEM3-GC31-MM, project: CMIP6, exp: historical, ensemble: r1i1p1f3, start_year: 1960, end_year: 2010, grid: gn}
+   - {dataset: HadGEM3-GC31-LL, project: CMIP6, exp: historical, ensemble: r1i1p1f3, start_year: 1960, end_year: 2010, grid: gn}
+#   - {dataset: MPI-ESM1-2-LR, project: CMIP6, mip: Omon, exp: historical, ensemble: r1i1p1f1, start_year: 1960, end_year: 2010, grid: gn}
+   #   - {dataset: MPI-ESM1-2-LR, project: CMIP6, mip: Amon, exp: historical, ensemble: r1i1p1f1, start_year: 1960, end_year: 2010, grid: gn}
    
-   #- {dataset: CNRM-CM5, project: CMIP5, start_year: 1990, end_year: 2010, ensemble: r1i1p1, exp: historical}
+   #- {dataset: CNRM-CM5, project: CMIP5, start_year: 1960, end_year: 2010, ensemble: r1i1p1, exp: historical}
 #  - {dataset: CNRM-CM5, project: CMIP5, start_year: 2020, end_year: 2075, ensemble: r1i1p1, exp: rcp85}
 
 preprocessors:
 
   global_anomalies_2d_seas:
-    anomalies:
-      period: month
-      reference:
-        start_year: 1990
-        start_month: 1
-        start_day: 1
-        end_year: 2010
-        end_month: 12
-        end_day: 31
-      standardize: false
-    seasonal_statistics:
-      operator: mean
+    detrend:
+      method: linear
     regrid:
       target_grid: 1x1
       scheme: linear
-  global_anomalies_surface_seas:
     anomalies:
       period: month
       reference:
-        start_year: 1990
+        start_year: 1981
         start_month: 1
         start_day: 1
         end_year: 2010
@@ -51,17 +40,21 @@ preprocessors:
       standardize: false
     seasonal_statistics:
       operator: mean
+    custom_order: true
+
+  global_anomalies_surface_seas:
     extract_levels:
       levels: [100000.]
       scheme: linear
+    detrend:
+      method: linear
     regrid:
       target_grid: 1x1
       scheme: linear
-  global_anomalies_2d_pr_seas:
     anomalies:
       period: month
       reference:
-        start_year: 1990
+        start_year: 1981
         start_month: 1
         start_day: 1
         end_year: 2010
@@ -70,11 +63,29 @@ preprocessors:
       standardize: false
     seasonal_statistics:
       operator: mean
+    custom_order: true
+
+  global_anomalies_2d_pr_seas:
+    detrend:
+      method: linear
     regrid:
       target_grid: 1x1
       scheme: linear
+    anomalies:
+      period: month
+      reference:
+        start_year: 1981
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    seasonal_statistics:
+      operator: mean
     convert_units:
       units: mm day-1  
+    custom_order: true
 
   global_anomalies_pr:
     detrend:
@@ -85,7 +96,7 @@ preprocessors:
     anomalies:
       period: month
       reference:
-        start_year: 1990
+        start_year: 1981
         start_month: 1
         start_day: 1
         end_year: 2010
@@ -103,18 +114,20 @@ preprocessors:
       end_longitude: 70
       start_latitude: -10
       end_latitude: 10
+    area_statistics:
+      operator: mean
+    detrend:
+      method: linear
     anomalies:
       period: month
       reference:
-        start_year: 1990
+        start_year: 1981
         start_month: 1
         start_day: 1
         end_year: 2010
         end_month: 12
         end_day: 31
       standardize: false
-    area_statistics:
-      operator: mean
     seasonal_statistics:
       operator: mean
     extract_season:
@@ -122,6 +135,7 @@ preprocessors:
     regrid_time:
       calendar: gregorian
       units: days since 1900-01-01
+    custom_order: true
 
   east_pole_anomalies_seas:
     extract_region:
@@ -129,18 +143,20 @@ preprocessors:
       end_longitude: 110
       start_latitude: -10
       end_latitude: 0
+    area_statistics:
+      operator: mean
+    detrend:
+      method: linear
     anomalies:
       period: month
       reference:
-        start_year: 1990
+        start_year: 1981
         start_month: 1
         start_day: 1
         end_year: 2010
         end_month: 12
         end_day: 31
       standardize: false
-    area_statistics:
-      operator: mean
     seasonal_statistics:
       operator: mean
     extract_season:
@@ -148,6 +164,56 @@ preprocessors:
     regrid_time:
       calendar: gregorian
       units: days since 1900-01-01
+    custom_order: true
+  west_pole_anomalies_monthly:
+    extract_region:
+      start_longitude: 50
+      end_longitude: 70
+      start_latitude: -10
+      end_latitude: 10
+    area_statistics:
+      operator: mean
+    detrend:
+      method: linear
+    anomalies:
+      period: month
+      reference:
+        start_year: 1981
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    regrid_time:
+      calendar: gregorian
+      units: days since 1900-01-01
+    custom_order: true
+
+  east_pole_anomalies_monthly:
+    extract_region:
+      start_longitude: 90
+      end_longitude: 110
+      start_latitude: -10
+      end_latitude: 0
+    area_statistics:
+      operator: mean
+    detrend:
+      method: linear
+    anomalies:
+      period: month
+      reference:
+        start_year: 1981
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    regrid_time:
+      calendar: gregorian
+      units: days since 1900-01-01
+    custom_order: true
 
   west_pole_abs:
     extract_region:
@@ -183,18 +249,20 @@ preprocessors:
       end_longitude: -120
       start_latitude: -5
       end_latitude: 5
+    area_statistics:
+      operator: mean
+    detrend:
+      method: linear
     anomalies:
       period: season
       reference:
-        start_year: 1990
+        start_year: 1981
         start_month: 1
         start_day: 1
         end_year: 2010
         end_month: 12
         end_day: 31
       standardize: false
-    area_statistics:
-      operator: mean
     seasonal_statistics:
       operator: mean
     extract_season:
@@ -202,6 +270,31 @@ preprocessors:
     regrid_time:
       calendar: gregorian
       units: days since 1900-01-01
+    custom_order: true
+  nino_3.4_anomalies_monthly:
+    extract_region:
+      start_longitude: -170
+      end_longitude: -120
+      start_latitude: -5
+      end_latitude: 5
+    area_statistics:
+      operator: mean
+    detrend:
+      method: linear
+    anomalies:
+      period: month
+      reference:
+        start_year: 1981
+        start_month: 1
+        start_day: 1
+        end_year: 2010
+        end_month: 12
+        end_day: 31
+      standardize: false
+    regrid_time:
+      calendar: gregorian
+      units: days since 1900-01-01
+    custom_order: true
 
   extract_eq_region:
     extract_region:
@@ -259,62 +352,62 @@ diagnostics:
   #       preprocessor: global_anomalies_2d_seas
   #       mip: Omon
   #       additional_datasets:
-  #       - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #       - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
   #     precip_anomalies_global_seasonal:
   #       short_name: pr
   #       preprocessor: global_anomalies_2d_pr_seas
   #       mip: Amon
   #       additional_datasets:
-  #       - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #       - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
   #     zonal_wind_anomalies_global:
   #       short_name: ua
   #       preprocessor: global_anomalies_surface_seas
   #       mip: Amon
   #       additional_datasets:
-  #       - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #       - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
   #     meridional_wind_anomalies_global:
   #       short_name: va
   #       preprocessor: global_anomalies_surface_seas
   #       mip: Amon
   #       additional_datasets:
-  #       - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #       - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
 
   #     sst_anomalies_west:
   #       short_name: tos
   #       preprocessor: west_pole_anomalies_seas
   #       mip: Omon
   #       additional_datasets:
-  #       - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #       - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
   #     sst_anomalies_east:
   #       short_name: tos
   #       preprocessor: east_pole_anomalies_seas
   #       mip: Omon
   #       additional_datasets:
-  #       - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #       - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
   #     # sst_abs_west:
   #     #   short_name: tos
   #     #   preprocessor: west_pole_abs
   #     #   mip: Omon
   #     #   additional_datasets:
-  #     #   - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #     #   - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
   #     # sst_abs_east:
   #     #   short_name: tos
   #     #   preprocessor: east_pole_abs
   #     #   mip: Omon
   #     #   additional_datasets:
-  #     #   - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #     #   - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
   #     sst_anomalies_nino:
   #       short_name: tos
   #       preprocessor: nino_3.4_anomalies_seas
   #       mip: Omon
   #       additional_datasets:
-  #       - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #       - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
   #     # precip_anomalies_global_monthly:
   #     #   short_name: pr
   #     #   preprocessor: global_anomalies_pr
   #     #   mip: Amon
   #     #   additional_datasets:
-  #     #   - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #     #   - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
 
   #   scripts: 
   #     composite_script:
@@ -323,56 +416,68 @@ diagnostics:
   skill_metrics:
     variables:
  
-      # zonal_wind_anomalies_global:
-      #   short_name: ua
-      #   preprocessor: global_anomalies_surface_seas
-      #   mip: Amon
-      #   additional_datasets:
-      #   - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
-      # meridional_wind_anomalies_global:
-      #   short_name: va
-      #   preprocessor: global_anomalies_surface_seas
-      #   mip: Amon
-      #   additional_datasets:
-      #   - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      sst_anomalies_global:
+        short_name: tos
+        preprocessor: global_anomalies_2d_seas
+        mip: Omon
+        additional_datasets:
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      precip_anomalies_global_seasonal:
+        short_name: pr
+        preprocessor: global_anomalies_2d_pr_seas
+        mip: Amon
+        additional_datasets:
+        - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      zonal_wind_anomalies_global:
+        short_name: ua
+        preprocessor: global_anomalies_surface_seas
+        mip: Amon
+        additional_datasets:
+        - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
+      meridional_wind_anomalies_global:
+        short_name: va
+        preprocessor: global_anomalies_surface_seas
+        mip: Amon
+        additional_datasets:
+        - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
 
       sst_anomalies_west_monthly:
         short_name: tos
         preprocessor: west_pole_anomalies_monthly
         mip: Omon
         additional_datasets:
-        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
       sst_anomalies_east_monthly:
         short_name: tos
         preprocessor: east_pole_anomalies_monthly
         mip: Omon
         additional_datasets:
-        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
       sst_anomalies_west_seasonal:
         short_name: tos
         preprocessor: west_pole_anomalies_seas
         mip: Omon
         additional_datasets:
-        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
       sst_anomalies_east_seasonal:
         short_name: tos
         preprocessor: east_pole_anomalies_seas
         mip: Omon
         additional_datasets:
-        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
 
       sst_anomalies_nino_monthly:
         short_name: tos
         preprocessor: nino_3.4_anomalies_monthly
         mip: Omon
         additional_datasets:
-        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
       sst_anomalies_nino_seasonal:
         short_name: tos
         preprocessor: nino_3.4_anomalies_seas
         mip: Omon
         additional_datasets:
-        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+        - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
 
    
     scripts: 
@@ -398,7 +503,7 @@ diagnostics:
   #       preprocessor: east_pole_abs
   #       mip: Omon
   #       additional_datasets:
-  #         - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #         - {dataset: HadISST, project: OBS, mip: Omon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
   #     u10_east:
   #       short_name: ua
   #       preprocessor: east_pole_abs_surface
@@ -407,7 +512,7 @@ diagnostics:
   #       - short_name: areacella
   #         skip: true
   #       additional_datasets:
-  #         - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1990, end_year: 2010, type: reanaly, version: 1, tier: 2}
+  #         - {dataset: NCEP, project: OBS, mip: Amon, start_year: 1960, end_year: 2010, type: reanaly, version: 1, tier: 2}
 
   #   scripts: 
   #     scatter_script:
