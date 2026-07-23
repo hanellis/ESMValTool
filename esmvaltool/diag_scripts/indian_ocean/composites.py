@@ -464,13 +464,6 @@ def main(cfg):
             meridional_wind_anoms.update(item)
 
 
-    print("DMI results:", dmi_results)
-    print("Nino data:", nino_data)
-    print("SST anomalies global:", sst_anomalies_global)
-    print("Zonal wind anomalies global:", zonal_wind_anoms)
-    print("Meridional wind anomalies global:", meridional_wind_anoms)
-    print("Precip anomalies seasonal:", precip_anoms)
-
     composite_map(
         cfg,
         dmi_results,

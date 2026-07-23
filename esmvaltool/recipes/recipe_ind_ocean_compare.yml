@@ -23,11 +23,11 @@ datasets:
 preprocessors:
 
   global_anomalies_2d_seas:
-    detrend:
-      method: linear
     regrid:
       target_grid: 1x1
       scheme: linear
+    detrend:
+      method: linear
     anomalies:
       period: month
       reference:
@@ -46,11 +46,11 @@ preprocessors:
     extract_levels:
       levels: [100000.]
       scheme: linear
-    detrend:
-      method: linear
     regrid:
       target_grid: 1x1
       scheme: linear
+    detrend:
+      method: linear
     anomalies:
       period: month
       reference:
@@ -66,11 +66,11 @@ preprocessors:
     custom_order: true
 
   global_anomalies_2d_pr_seas:
-    detrend:
-      method: linear
     regrid:
       target_grid: 1x1
       scheme: linear
+    # detrend:
+    #   method: linear
     anomalies:
       period: month
       reference:

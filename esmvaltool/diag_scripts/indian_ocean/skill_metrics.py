@@ -13,9 +13,56 @@ from scipy.stats import linregress # type: ignore
 from scipy.signal import welch, detrend # type: ignore
 import cartopy.crs as ccrs # type: ignore
 import cartopy.feature as cfeature # type: ignore
+from cartopy.util import add_cyclic_point # type: ignore
+from shapely.errors import GEOSException # type: ignore
 
 import warnings
 from iris.warnings import IrisVagueMetadataWarning
+
+def _log_cube_metadata(cube, title, data_name='data'):
+    """Log debugging metadata for a cube before plotting attempt."""
+    try:
+        lons = cube.coord('longitude').points
+        lats = cube.coord('latitude').points
+        data = ma.filled(cube.data, np.nan)
+        
+        data_min = np.nanmin(data)
+        data_max = np.nanmax(data)
+        mask_fraction = np.sum(ma.getmaskarray(cube.data).ravel()) / cube.data.size
+        lon_min, lon_max = np.min(lons), np.max(lons)
+        lat_min, lat_max = np.min(lats), np.max(lats)
+        
+        logger.debug(
+            'Panel: %s | Var: %s | Shape: %s | Data range: [%.3f, %.3f] | '
+            'Mask fraction: %.2f%% | Lon range: [%.2f, %.2f] | Lat range: [%.2f, %.2f]',
+            title, data_name, cube.data.shape,
+            data_min, data_max, mask_fraction * 100,
+            lon_min, lon_max, lat_min, lat_max,
+        )
+    except Exception as e:
+        logger.debug('Could not log metadata for %s: %s', title, e)
+
+
+def _wrap_and_sort_longitudes(lons, field):
+    """Convert longitudes to [-180, 180), sort them, and reorder the field."""
+    lons_wrapped = ((lons + 180.0) % 360.0) - 180.0
+    sort_idx = np.argsort(lons_wrapped)
+    lons_sorted = lons_wrapped[sort_idx]
+    field_sorted = field[..., sort_idx]
+    return lons_sorted, field_sorted, sort_idx
+
+
+def _prepare_cyclic_field(lons, field):
+    """Return seam-safe cyclic field for plotting with contour/pcolormesh."""
+    lons_sorted, field_sorted, _ = _wrap_and_sort_longitudes(lons, field)
+    field_cyclic, lons_cyclic = add_cyclic_point(field_sorted, coord=lons_sorted)
+    return lons_cyclic, field_cyclic
+
+
+def _is_near_global(lons, lats):
+    lon_span = float(np.nanmax(lons) - np.nanmin(lons))
+    lat_span = float(np.nanmax(lats) - np.nanmin(lats))
+    return lon_span > 350.0 and lat_span > 170.0
 
 warnings.filterwarnings(
     "ignore",
@@ -54,7 +101,7 @@ def find_peak_years(cube, threshold):
     return sorted(set(positive_years.astype(int))), sorted(set(negative_years.astype(int)))
 
 
-def add_subplot(ax, cube, cb_label, cb_range, cmap, title):
+def add_subplot(ax, cube, cb_label, cb_range, cmap, title, mask_land=False):
     # Add map features
     ax.coastlines()
     gl = ax.gridlines(draw_labels=True, linewidth=0.8, color='grey', linestyle='--', alpha=1)
@@ -64,13 +111,58 @@ def add_subplot(ax, cube, cb_label, cb_range, cmap, title):
     gl.ylabel_style = {'size': 12}
 
     # Contour plot
-    contour = ax.contourf(
-        cube.coord('longitude').points,
-        cube.coord('latitude').points,
-        cube.data,
-        cmap=cmap,  # Change colormap here
-        levels=cb_range, extend='both'
-    )
+    lons = cube.coord('longitude').points
+    lats = cube.coord('latitude').points
+    data = ma.filled(cube.data, np.nan)
+    lons_plot, data_plot = _prepare_cyclic_field(lons, data)
+    
+    _log_cube_metadata(cube, title, data_name='SST/Precip')
+    logger.debug('add_subplot: attempting contourf with %d levels, lon range [%.2f, %.2f]',
+                 len(cb_range), np.min(lons), np.max(lons))
+    
+    try:
+        # For near-global grids, pcolormesh is more robust than contour polygons.
+        if _is_near_global(lons, lats):
+            contour = ax.pcolormesh(
+                lons_plot,
+                lats,
+                data_plot,
+                cmap=cmap,
+                vmin=np.min(cb_range),
+                vmax=np.max(cb_range),
+                shading='auto',
+                transform=ccrs.PlateCarree(),
+            )
+        else:
+            contour = ax.contourf(
+                lons_plot,
+                lats,
+                data_plot,
+                cmap=cmap,
+                levels=cb_range,
+                extend='both',
+                transform=ccrs.PlateCarree(),
+            )
+    except GEOSException as exc:
+        logger.error(
+            'GEOSException in contourf for %s at lon/lat [%.2f, %.2f] to [%.2f, %.2f]; '
+            'falling back to pcolormesh. Error: %s',
+            title, np.min(lons), np.min(lats), np.max(lons), np.max(lats), exc,
+        )
+        contour = ax.pcolormesh(
+            lons_plot,
+            lats,
+            data_plot,
+            cmap=cmap,
+            vmin=np.min(cb_range),
+            vmax=np.max(cb_range),
+            shading='auto',
+            transform=ccrs.PlateCarree(),
+        )
+
+    if mask_land:
+        # Visual land mask for SST panels: cover land data with a solid feature.
+        ax.add_feature(cfeature.LAND, facecolor='lightgrey', edgecolor='none', zorder=3)
 
     # Title for each subplot
     ax.set_title(title, fontsize=14)
@@ -91,17 +183,67 @@ def add_wind_subplot(ax, u_cube, v_cube, title, quiver_step=4):
 
     lons = u_cube.coord('longitude').points
     lats = u_cube.coord('latitude').points
-    u = ma.filled(u_cube.data, np.nan)
-    v = ma.filled(v_cube.data, np.nan)
-    speed = np.sqrt(u ** 2 + v ** 2)
+    u = ma.filled(u_cube.data, np.nan).astype(np.float64)
+    v = ma.filled(v_cube.data, np.nan).astype(np.float64)
 
-    levels = np.arange(0, 8.5, 0.5)
-    contour = ax.contourf(lons, lats, speed, levels=levels, cmap='PuRd', extend='max')
+    # Guard against unrealistic fill values or corrupted points before magnitude.
+    u[np.abs(u) > 1e4] = np.nan
+    v[np.abs(v) > 1e4] = np.nan
+    speed = np.hypot(u, v)
 
-    lons_q = lons[::quiver_step]
+    lons_plot, speed_plot = _prepare_cyclic_field(lons, speed)
+    lons_sorted, u_sorted, sort_idx = _wrap_and_sort_longitudes(lons, u)
+    _, v_sorted, _ = _wrap_and_sort_longitudes(lons, v)
+
+    levels = np.arange(0, 6.5, 0.5)
+    
+    _log_cube_metadata(u_cube, title, data_name='wind_u')
+    logger.debug('add_wind_subplot: attempting contourf with %d levels, lon range [%.2f, %.2f]',
+                 len(levels), np.min(lons), np.max(lons))
+    
+    try:
+        if _is_near_global(lons, lats):
+            contour = ax.pcolormesh(
+                lons_plot,
+                lats,
+                speed_plot,
+                cmap='PuRd',
+                vmin=np.min(levels),
+                vmax=np.max(levels),
+                shading='auto',
+                transform=ccrs.PlateCarree(),
+            )
+        else:
+            contour = ax.contourf(
+                lons_plot,
+                lats,
+                speed_plot,
+                levels=levels,
+                cmap='PuRd',
+                extend='max',
+                transform=ccrs.PlateCarree(),
+            )
+    except GEOSException as exc:
+        logger.error(
+            'GEOSException in wind contourf for %s at lon/lat [%.2f, %.2f] to [%.2f, %.2f]; '
+            'falling back to pcolormesh. Error: %s',
+            title, np.min(lons), np.min(lats), np.max(lons), np.max(lats), exc,
+        )
+        contour = ax.pcolormesh(
+            lons_plot,
+            lats,
+            speed_plot,
+            cmap='PuRd',
+            vmin=np.min(levels),
+            vmax=np.max(levels),
+            shading='auto',
+            transform=ccrs.PlateCarree(),
+        )
+
+    lons_q = lons_sorted[::quiver_step]
     lats_q = lats[::quiver_step]
-    u_q = u[::quiver_step, ::quiver_step]
-    v_q = v[::quiver_step, ::quiver_step]
+    u_q = u_sorted[::quiver_step, ::quiver_step]
+    v_q = v_sorted[::quiver_step, ::quiver_step]
     ax.quiver(lons_q, lats_q, u_q, v_q,
               transform=ccrs.PlateCarree(), scale=50, scale_units='width', color='black', width=0.003)
 
@@ -255,7 +397,7 @@ def _event_year_groups(dmi_cube, nino_cube, return_seas_year=False):
 
     pIOD_EN_yrs, pIOD_only_yrs, EN_only_yrs = get_event_sets(pIOD_yrs, EN_yrs)
     nIOD_LN_yrs, nIOD_only_yrs, LN_only_yrs = get_event_sets(nIOD_yrs, LN_yrs)
-    print('EN_years:', EN_yrs, 'EN_only_years:', EN_only_yrs)
+
     if return_seas_year:
         return {
             'pIOD_all': pIOD_yrs,
@@ -294,8 +436,8 @@ def _first_cube(dataset_dict):
 
 def _build_panels_for_event(column_order, years_by_column, season, sst_dict, wind_u_dict, wind_v_dict, precip_dict, obs_keys):
     scalar_row_specs = [
-        ('sst', 'SST anomaly / $^\\circ$C', np.arange(-2.5, 2.7, 0.2), 'RdBu_r', sst_dict),
-        ('precip', 'Precip anomaly / mm day$^{-1}$', np.arange(-6.0, 6.5, 0.5), 'BrBG', precip_dict),
+        ('sst', 'SST anomaly / $^\\circ$C', np.arange(-2.0, 2.2, 0.2), 'RdBu_r', sst_dict),
+        ('precip', 'Precip anomaly / mm day$^{-1}$', np.arange(-5.0, 5.5, 0.5), 'BrBG', precip_dict),
     ]
 
     def _extract_col(var_dict, obs_key, column, years):
@@ -311,7 +453,7 @@ def _build_panels_for_event(column_order, years_by_column, season, sst_dict, win
     sst_row = [
         {'type': 'contourf',
          'cube': _extract_col(var_dict, obs_keys[var_name], col, years_by_column[col]),
-         'cb_label': cb_label, 'cb_range': cb_range, 'cmap': cmap}
+         'cb_label': cb_label, 'cb_range': cb_range, 'cmap': cmap, 'mask_land': True}
         for col in column_order
     ]
 
@@ -345,7 +487,15 @@ def plot_3x3_composite_map(cfg, panels, column_labels, row_labels, title, output
             if panel['type'] == 'quiver':
                 add_wind_subplot(axes[row_idx, col_idx], panel['u_cube'], panel['v_cube'], panel_title, quiver_step=10)
             else:
-                add_subplot(axes[row_idx, col_idx], panel['cube'], panel['cb_label'], panel['cb_range'], panel['cmap'], panel_title)
+                add_subplot(
+                    axes[row_idx, col_idx],
+                    panel['cube'],
+                    panel['cb_label'],
+                    panel['cb_range'],
+                    panel['cmap'],
+                    panel_title,
+                    mask_land=panel.get('mask_land', False),
+                )
 
     fig.suptitle(title, fontsize=16, y=0.99)
     count_text = (
@@ -441,7 +591,6 @@ def monthly_plot_event_years(cfg, dmi_dict_seas, nino_dict_seas, dmi_dict_monthl
     for dataset in selected_models:
         years_by_column[dataset] = _event_year_groups(dmi_dict_seas[dataset]['cube'], nino_dict_seas[dataset]['cube'])
         
-    print(years_by_column)
     def _dataset_key(obs_key, column):
         return obs_key if column == 'OBS' else column
 
@@ -887,15 +1036,15 @@ def main(cfg):
         nino_anoms_monthly,
     )
     
-    # composite_map(
-    #     cfg,
-    #     dmi_seas,
-    #     nino_anoms_seas,
-    #     sst_anomalies_global,
-    #     zonal_wind_anoms,
-    #     meridional_wind_anoms,
-    #     precip_anoms,
-    # )
+    composite_map(
+        cfg,
+        dmi_seas,
+        nino_anoms_seas,
+        sst_anomalies_global,
+        zonal_wind_anoms,
+        meridional_wind_anoms,
+        precip_anoms,
+    )
 
 if __name__ == '__main__':
     with run_diagnostic() as config:
